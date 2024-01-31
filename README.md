@@ -2,7 +2,7 @@
 
 This package provides DI configuration for JustSaying (v7 currently) using SimpleInjector. Additionally it provides a middleware which can be used to resolve dependencies within a SimpleInjector async scope.
 
-Currently this is a work in progress and is not yet published to NuGet. It will require a core change to JustSaying first.
+Currently this is a work in progress and is not yet published to NuGet.
 
 ## How to use
 
@@ -19,7 +19,11 @@ var builder = container.AddJustSayingReturnBuilder(
                 x.ForTopic<TestMessage>(
                     cfg =>
                     {
-                        cfg.WithMiddlewareConfiguration(m => { m.UseSimpleInjectorScope(); });
+                        cfg.WithMiddlewareConfiguration(m =>
+                        {
+                            m.UseSimpleInjectorScope();
+                            m.UseDefaults<TestMessage>(typeof(TestMessageHandler)); // Add default middleware pipeline
+                        });
                     });
             }
         );

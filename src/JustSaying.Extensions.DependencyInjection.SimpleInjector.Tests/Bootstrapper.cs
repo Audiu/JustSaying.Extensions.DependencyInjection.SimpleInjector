@@ -99,13 +99,21 @@ public class Bootstrapper
                         x.ForTopic<TestMessage>(
                             cfg =>
                             {
-                                cfg.WithMiddlewareConfiguration(m => { m.UseSimpleInjectorScope(); });
+                                cfg.WithMiddlewareConfiguration(m =>
+                                {
+                                    m.UseSimpleInjectorScope();
+                                    m.UseDefaults<TestMessage>(typeof(TestMessageHandler)); // Add default middleware pipeline
+                                });
                             });
 
                         x.ForQueue<TestMessagePointToPoint>(
                             cfg =>
                             {
-                                cfg.WithMiddlewareConfiguration(m => { m.UseSimpleInjectorScope(); });
+                                cfg.WithMiddlewareConfiguration(m =>
+                                {
+                                    m.UseSimpleInjectorScope();
+                                    m.UseDefaults<TestMessagePointToPoint>(typeof(TestMessagePointToPointHandler)); // Add default middleware pipeline
+                                });
                             });
                     }
                 );
