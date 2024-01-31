@@ -87,7 +87,7 @@ public class Bootstrapper
 
         container.RegisterInstance<ILoggerFactory>(loggerFactory);
 
-        container.AddJustSaying(
+        var builder = container.AddJustSayingReturnBuilder(
             new AwsConfig(null, null, "eu-west-1", "http://localhost.localstack.cloud:4566"),
             null,
             null,
@@ -120,5 +120,9 @@ public class Bootstrapper
 
         container.Register<IHandlerAsync<TestMessage>, TestMessageHandler>(Lifestyle.Scoped);
         container.Register<IHandlerAsync<TestMessagePointToPoint>, TestMessagePointToPointHandler>(Lifestyle.Scoped);
+
+        // Final steps (we might want to override our publishers/subscribers)
+        container.RegisterSingleton(() => builder.BuildPublisher());
+        container.RegisterSingleton(() => builder.BuildSubscribers());
     }
 }

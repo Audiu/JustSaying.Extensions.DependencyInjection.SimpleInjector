@@ -16,7 +16,7 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
 
     public static class ContainerExtensions
     {
-        public static void AddJustSaying(
+        public static MessagingBusBuilder AddJustSayingReturnBuilder(
             this Container container,
             AwsConfig awsConfig,
             ITopicNamingConvention topicNamingConvention,
@@ -109,8 +109,7 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             //     contributor.Configure(builder);
             // }
 
-            container.RegisterSingleton(() => builder.BuildPublisher());
-            container.RegisterSingleton(() => builder.BuildSubscribers());
+            return builder;
         }
     }
 }
