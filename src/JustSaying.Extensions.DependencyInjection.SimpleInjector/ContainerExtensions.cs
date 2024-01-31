@@ -51,7 +51,7 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             container.RegisterInstance<IMessageSerializationFactory>(messageSerializationFactory);
             container.RegisterSingleton<IMessageSubjectProvider, GenericMessageSubjectProvider>();
             container.RegisterSingleton<IVerifyAmazonQueues, AmazonQueueCreator>();
-            
+
             container.RegisterInstance<IMessageSerializationRegister>(
                 new MessageSerializationRegister(
                     messagingConfig.MessageSubjectProvider,
@@ -59,25 +59,37 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
 
             container.RegisterSingleton<IMessageReceivePauseSignal, MessageReceivePauseSignal>();
 
+            if (queueNamingConvention == null)
+            {
+                queueNamingConvention = new DefaultNamingConventions();
+            }
+
+            if (topicNamingConvention == null)
+            {
+                topicNamingConvention = new DefaultNamingConventions();
+            }
+
+            container.RegisterInstance<IQueueNamingConvention>(queueNamingConvention);
+            container.RegisterInstance<ITopicNamingConvention>(topicNamingConvention);
+
             var builder = new MessagingBusBuilder()
                 .WithServiceResolver(resolver)
                 .Client(
                     x =>
                     {
-                        // if (configuration.HasAWSServiceUrl())
-                        // {
-                        //     // The AWS client SDK allows specifying a custom HTTP endpoint.
-                        //     // For testing purposes it is useful to specify a value that
-                        //     // points to a docker image such as `localstack/localstack`
-                        //     x.WithServiceUri(configuration.GetAWSServiceUri())
-                        //         .WithAnonymousCredentials();
-                        // }
-                        // else
-                        // {
-                        // The real AWS environment will require some means of authentication
-                        x.WithBasicCredentials(awsConfig.AccessKey, awsConfig.SecretKey);
-                        //x.WithSessionCredentials("###", "###", "###");
-                        // }
+                        if (!string.IsNullOrEmpty(awsConfig.ServiceUrl))
+                        {
+                            // The AWS client SDK allows specifying a custom HTTP endpoint.
+                            // For testing purposes it is useful to specify a value that
+                            // points to a docker image such as `localstack/localstack`
+                            x.WithServiceUri(new Uri(awsConfig.ServiceUrl)).WithAnonymousCredentials();
+                        }
+                        else
+                        {
+                            // The real AWS environment will require some means of authentication
+                            x.WithBasicCredentials(awsConfig.AccessKey, awsConfig.SecretKey);
+                            //x.WithSessionCredentials("###", "###", "###");
+                        }
                     })
                 .Messaging(
                     x =>
@@ -96,9 +108,6 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             // {
             //     contributor.Configure(builder);
             // }
-            
-            container.RegisterInstance<IQueueNamingConvention>(queueNamingConvention);
-            container.RegisterInstance<ITopicNamingConvention>(topicNamingConvention);
 
             container.RegisterSingleton(() => builder.BuildPublisher());
             container.RegisterSingleton(() => builder.BuildSubscribers());

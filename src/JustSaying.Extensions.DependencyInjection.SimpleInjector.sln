@@ -7,6 +7,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JustSaying.Extensions.DependencyInjection.SimpleInjector.Tests", "JustSaying.Extensions.DependencyInjection.SimpleInjector.Tests\JustSaying.Extensions.DependencyInjection.SimpleInjector.Tests.csproj", "{1E4ADCDC-C925-4912-823C-6A9DB01992B0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{13989225-97F5-4FF6-8A90-909C20C5915E}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.env = .env
+		docker-compose.yml = docker-compose.yml
+		docker-compose-reset-containers.sh = docker-compose-reset-containers.sh
+		docker-compose-run-tests.sh = docker-compose-run-tests.sh
+		Dockerfile = Dockerfile
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
