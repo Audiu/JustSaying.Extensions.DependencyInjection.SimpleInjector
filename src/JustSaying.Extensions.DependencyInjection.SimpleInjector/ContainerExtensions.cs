@@ -19,13 +19,27 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
         public static MessagingBusBuilder AddJustSayingReturnBuilder(
             this Container container,
             AwsConfig awsConfig,
+            Action<MessagingBusBuilder> configure)
+        {
+            var defaultNamingStrategy = new DefaultNamingConventions();
+
+            return AddJustSayingReturnBuilder(
+                container,
+                awsConfig,
+                defaultNamingStrategy,
+                defaultNamingStrategy,
+                configure);
+        }
+
+        public static MessagingBusBuilder AddJustSayingReturnBuilder(
+            this Container container,
+            AwsConfig awsConfig,
             ITopicNamingConvention topicNamingConvention,
             IQueueNamingConvention queueNamingConvention,
             Action<MessagingBusBuilder> configure)
         {
             container.RegisterInstance(awsConfig);
 
-            // Register as self so the same singleton instance implements two different interfaces
             var resolver = new ServiceProviderResolver(container);
             container.RegisterInstance(resolver);
             container.RegisterInstance<IHandlerResolver>(resolver);
@@ -34,6 +48,7 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             container.RegisterInstance<IAwsClientFactory>(new DefaultAwsClientFactory());
             container.RegisterInstance<IAwsClientFactoryProxy>(
                 new AwsClientFactoryProxy(container.GetInstance<IAwsClientFactory>));
+
             var messagingConfig = new MessagingConfig();
             container.RegisterInstance<IMessagingConfig>(messagingConfig);
             container.RegisterSingleton<IMessageMonitor, NullOpMessageMonitor>();
@@ -100,14 +115,6 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
                     });
 
             configure(builder);
-
-            // Cant do this until container is built
-            // var contributors = container.GetAllInstances<IMessageBusConfigurationContributor>();
-            //
-            // foreach (var contributor in contributors)
-            // {
-            //     contributor.Configure(builder);
-            // }
 
             return builder;
         }
