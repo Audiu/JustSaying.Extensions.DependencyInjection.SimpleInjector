@@ -38,4 +38,20 @@ public class MessagingTests
         TestMessagePointToPointHandler.LastUniqueId.Should().Be(id);
         TestMessagePointToPointHandler.LastQueueUri.ToString().Should().Contain("testmessagepointtopoint");
     }
+
+    [Test]
+    public async Task TestHandlerShouldBeNewInstances()
+    {
+        TestMessageHandler.InstanceIds.Clear();
+
+        var messagePublisher = Bootstrapper.Container.GetInstance<IMessagePublisher>();
+
+        await messagePublisher.PublishAsync(new TestMessage(Guid.NewGuid().ToString()));
+        await messagePublisher.PublishAsync(new TestMessage(Guid.NewGuid().ToString()));
+
+        await Task.Delay(2000);
+
+        TestMessageHandler.InstanceIds.Should().HaveCount(2);
+        TestMessageHandler.InstanceIds.Should().OnlyHaveUniqueItems();
+    }
 }
