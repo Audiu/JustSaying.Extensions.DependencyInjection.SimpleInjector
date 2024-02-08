@@ -87,10 +87,16 @@ public class Bootstrapper
 
         container.RegisterInstance<ILoggerFactory>(loggerFactory);
 
+        var awsConfig = new AwsConfig(null, null, "eu-west-2", "http://localhost.localstack.cloud:4566");
+
+        container.AddJustSayingNoOpMessageMonitor();
+
         var builder = container.AddJustSayingReturnBuilder(
-            new AwsConfig(null, null, "eu-west-1", "http://localhost.localstack.cloud:4566"),
-            null,
-            null,
+            awsConfig,
+            new MessagingConfig
+            {
+                Region = awsConfig.RegionEndpoint,
+            },
             builder =>
             {
                 builder.Subscriptions(

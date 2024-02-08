@@ -16,26 +16,32 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
 
     public static class ContainerExtensions
     {
+        public static void AddJustSayingNoOpMessageMonitor(this Container container)
+        {
+            container.RegisterSingleton<IMessageMonitor, NullOpMessageMonitor>();
+        }
+
         public static MessagingBusBuilder AddJustSayingReturnBuilder(
             this Container container,
             AwsConfig awsConfig,
             Action<MessagingBusBuilder> configure)
         {
-            var defaultNamingStrategy = new DefaultNamingConventions();
+            var messagingConfig = new MessagingConfig
+            {
+                Region = awsConfig.RegionEndpoint,
+            };
 
             return AddJustSayingReturnBuilder(
                 container,
                 awsConfig,
-                defaultNamingStrategy,
-                defaultNamingStrategy,
+                messagingConfig,
                 configure);
         }
 
         public static MessagingBusBuilder AddJustSayingReturnBuilder(
             this Container container,
             AwsConfig awsConfig,
-            ITopicNamingConvention topicNamingConvention,
-            IQueueNamingConvention queueNamingConvention,
+            IMessagingConfig messagingConfig,
             Action<MessagingBusBuilder> configure)
         {
             container.RegisterInstance(awsConfig);
@@ -46,12 +52,8 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             container.RegisterInstance<IServiceResolver>(resolver);
 
             container.RegisterInstance<IAwsClientFactory>(new DefaultAwsClientFactory());
-            container.RegisterInstance<IAwsClientFactoryProxy>(
-                new AwsClientFactoryProxy(container.GetInstance<IAwsClientFactory>));
-
-            var messagingConfig = new MessagingConfig();
-            container.RegisterInstance<IMessagingConfig>(messagingConfig);
-            container.RegisterSingleton<IMessageMonitor, NullOpMessageMonitor>();
+            container.RegisterSingleton<IAwsClientFactoryProxy>(
+                () => new AwsClientFactoryProxy(container.GetInstance<IAwsClientFactory>));
 
             container.Register<LoggingMiddleware>(Lifestyle.Transient);
             container.Register<SqsPostProcessorMiddleware>(Lifestyle.Transient);
@@ -74,18 +76,9 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
 
             container.RegisterSingleton<IMessageReceivePauseSignal, MessageReceivePauseSignal>();
 
-            if (queueNamingConvention == null)
-            {
-                queueNamingConvention = new DefaultNamingConventions();
-            }
-
-            if (topicNamingConvention == null)
-            {
-                topicNamingConvention = new DefaultNamingConventions();
-            }
-
-            container.RegisterInstance<IQueueNamingConvention>(queueNamingConvention);
-            container.RegisterInstance<ITopicNamingConvention>(topicNamingConvention);
+            container.RegisterInstance(messagingConfig);
+            container.RegisterInstance(messagingConfig.QueueNamingConvention);
+            container.RegisterInstance(messagingConfig.TopicNamingConvention);
 
             var builder = new MessagingBusBuilder()
                 .WithServiceResolver(resolver)
@@ -105,13 +98,6 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
                             x.WithBasicCredentials(awsConfig.AccessKey, awsConfig.SecretKey);
                             //x.WithSessionCredentials("###", "###", "###");
                         }
-                    })
-                .Messaging(
-                    x =>
-                    {
-                        x.WithRegion(awsConfig.RegionEndpoint);
-                        x.WithQueueNamingConvention(queueNamingConvention);
-                        x.WithTopicNamingConvention(topicNamingConvention);
                     });
 
             configure(builder);
