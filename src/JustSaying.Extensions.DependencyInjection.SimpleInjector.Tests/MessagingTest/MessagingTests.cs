@@ -2,13 +2,28 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using JustSaying.Messaging;
+using Newtonsoft.Json;
 using NUnit.Framework;
+using Serilog;
 
 namespace JustSaying.Extensions.DependencyInjection.SimpleInjector.Tests.MessagingTest;
 
 [TestFixture]
 public class MessagingTests
 {
+    [Test]
+    public async Task Interrogate()
+    {
+        Log.Information(
+            $"Publisher: {JsonConvert.SerializeObject(Bootstrapper.Container.GetInstance<IMessagePublisher>().Interrogate())}");
+
+        Log.Information(
+            $"Bus: {JsonConvert.SerializeObject(Bootstrapper.Container.GetInstance<IMessagingBus>().Interrogate())}");
+
+        JsonConvert.SerializeObject(Bootstrapper.Container.GetInstance<IMessagePublisher>().Interrogate()).Should().Contain("eu-west-1");
+        JsonConvert.SerializeObject(Bootstrapper.Container.GetInstance<IMessagingBus>().Interrogate()).Should().Contain("eu-west-1");
+    }
+
     [Test]
     public async Task TestTopic()
     {
