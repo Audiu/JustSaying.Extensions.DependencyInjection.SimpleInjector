@@ -87,7 +87,7 @@ public class Bootstrapper
 
         container.RegisterInstance<ILoggerFactory>(loggerFactory);
 
-        var awsConfig = new AwsConfig(null, null, "eu-west-2", "http://localhost.localstack.cloud:4566");
+        var awsConfig = new AwsConfig(null, null, "eu-west-1", "http://localhost.localstack.cloud:4566");
 
         container.AddJustSayingNoOpMessageMonitor();
 
