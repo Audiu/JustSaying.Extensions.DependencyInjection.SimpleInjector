@@ -21,9 +21,11 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             Func<CancellationToken, Task<bool>> func,
             CancellationToken stoppingToken)
         {
-            await using (AsyncScopedLifestyle.BeginScope(_container))
+            var scope = AsyncScopedLifestyle.BeginScope(_container);
+
+            await using (scope.ConfigureAwait(false))
             {
-                return await func(stoppingToken);
+                return await func(stoppingToken).ConfigureAwait(false);
             }
         }
     }

@@ -8,7 +8,6 @@ using JustSaying.Messaging.MessageSerialization;
 using JustSaying.Messaging.Middleware.Logging;
 using JustSaying.Messaging.Middleware.PostProcessing;
 using JustSaying.Messaging.Monitoring;
-using JustSaying.Naming;
 using SimpleInjector;
 
 namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
