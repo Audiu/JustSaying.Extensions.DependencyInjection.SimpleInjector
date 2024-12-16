@@ -18,7 +18,7 @@ jobs:
             command: |
               mkdir workspace
               [[ -z "${CIRCLE_PULL_REQUEST}" ]] && PR_TAG='' || PR_TAG="-pre.${CIRCLE_PULL_REQUEST##*/}"
-              echo "export TAG=2.0.$CIRCLE_BUILD_NUM$PR_TAG" > workspace/version_tag
+              echo "export TAG=7.1.$CIRCLE_BUILD_NUM$PR_TAG" > workspace/version_tag
               cat workspace/version_tag
         - run:
             name: "Define Environment Variables at Runtime"
