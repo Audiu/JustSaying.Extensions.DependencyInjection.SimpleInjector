@@ -63,15 +63,8 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             container.RegisterInstance<IMessageContextAccessor>(messageContextAccessor);
             container.RegisterInstance<IMessageContextReader>(messageContextAccessor);
 
-            var messageSerializationFactory = new NewtonsoftSerializationFactory();
-            container.RegisterInstance<IMessageSerializationFactory>(messageSerializationFactory);
             container.RegisterSingleton<IMessageSubjectProvider, GenericMessageSubjectProvider>();
             container.RegisterSingleton<IVerifyAmazonQueues, AmazonQueueCreator>();
-
-            container.RegisterInstance<IMessageSerializationRegister>(
-                new MessageSerializationRegister(
-                    messagingConfig.MessageSubjectProvider,
-                    messageSerializationFactory));
 
             container.RegisterSingleton<IMessageReceivePauseSignal, MessageReceivePauseSignal>();
 
