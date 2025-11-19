@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using JustSaying.Extensions.DependencyInjection.SimpleInjector.Tests.MessagingTest;
 using JustSaying.Messaging;
 using JustSaying.Messaging.MessageHandling;
@@ -16,9 +18,13 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector.Tests;
 [SetUpFixture]
 public class Bootstrapper
 {
+    private static IContainer _localStackContainer;
+    
     public static ILoggerFactory LoggerFactory { get; private set; }
 
     public static Container Container { get; private set; }
+    
+    public static string LocalStackServiceUrl { get; private set; }
 
     [OneTimeSetUp]
     public async Task FixtureSetup()
@@ -40,6 +46,26 @@ public class Bootstrapper
 
         try
         {
+            // Start LocalStack container
+            logger.Information("Starting LocalStack container...");
+            TestContext.Progress.WriteLine("Starting LocalStack container...");
+            
+            _localStackContainer = new ContainerBuilder()
+                .WithImage("localstack/localstack:latest")
+                .WithPortBinding(4566, true)
+                .WithEnvironment("SERVICES", "sns,sqs")
+                .WithEnvironment("DEBUG", "0")
+                .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(4566))
+                .Build();
+
+            await _localStackContainer.StartAsync();
+            
+            var port = _localStackContainer.GetMappedPublicPort(4566);
+            LocalStackServiceUrl = $"http://{_localStackContainer.Hostname}:{port}";
+            
+            logger.Information($"LocalStack started at {LocalStackServiceUrl}");
+            TestContext.Progress.WriteLine($"LocalStack started at {LocalStackServiceUrl}");
+
             Container = new Container();
             ConfigureInjection(Container);
 
@@ -65,10 +91,15 @@ public class Bootstrapper
     }
 
     [OneTimeTearDown]
-    public void FixtureTearDown()
+    public async Task FixtureTearDown()
     {
         Container?.Dispose();
         LoggerFactory?.Dispose();
+        
+        if (_localStackContainer != null)
+        {
+            await _localStackContainer.DisposeAsync();
+        }
     }
 
     private static void ConfigureInjection(Container container)
@@ -87,7 +118,7 @@ public class Bootstrapper
 
         container.RegisterInstance<ILoggerFactory>(loggerFactory);
 
-        var awsConfig = new AwsConfig(null, null, "eu-west-1", "http://localhost.localstack.cloud:4566");
+        var awsConfig = new AwsConfig(null, null, "eu-west-1", LocalStackServiceUrl);
 
         container.AddJustSayingNoOpMessageMonitor();
 

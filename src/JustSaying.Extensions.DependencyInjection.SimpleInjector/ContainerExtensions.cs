@@ -8,6 +8,7 @@ using JustSaying.Messaging.MessageSerialization;
 using JustSaying.Messaging.Middleware.Logging;
 using JustSaying.Messaging.Middleware.PostProcessing;
 using JustSaying.Messaging.Monitoring;
+using Newtonsoft.Json;
 using SimpleInjector;
 
 namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
@@ -67,6 +68,9 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             container.RegisterSingleton<IVerifyAmazonQueues, AmazonQueueCreator>();
 
             container.RegisterSingleton<IMessageReceivePauseSignal, MessageReceivePauseSignal>();
+            
+            container.RegisterSingleton(() => new JsonSerializerSettings());
+            container.RegisterSingleton<IMessageBodySerializationFactory, NewtonsoftSerializationFactory>();
 
             container.RegisterInstance(messagingConfig);
             container.RegisterInstance(messagingConfig.QueueNamingConvention);
