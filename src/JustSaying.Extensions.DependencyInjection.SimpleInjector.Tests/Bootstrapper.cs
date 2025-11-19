@@ -69,7 +69,24 @@ public class Bootstrapper
             Container = new Container();
             ConfigureInjection(Container);
 
-            Container.Verify();
+            // Set dummy AWS credentials to allow Container.Verify() to succeed
+            // These won't be used because LocalStack is configured with anonymous credentials
+            var originalAccessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
+            var originalSecretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
+            
+            try
+            {
+                Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
+                Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
+                
+                Container.Verify();
+            }
+            finally
+            {
+                // Restore original values
+                Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", originalAccessKey);
+                Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", originalSecretKey);
+            }
 
             logger.Information("Configured and verified runtime injection");
             TestContext.Progress.WriteLine("Configured and verified runtime injection");
