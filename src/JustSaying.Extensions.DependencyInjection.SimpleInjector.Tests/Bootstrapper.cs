@@ -19,11 +19,11 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector.Tests;
 public class Bootstrapper
 {
     private static IContainer _localStackContainer;
-    
+
     public static ILoggerFactory LoggerFactory { get; private set; }
 
     public static Container Container { get; private set; }
-    
+
     public static string LocalStackServiceUrl { get; private set; }
 
     [OneTimeSetUp]
@@ -49,7 +49,7 @@ public class Bootstrapper
             // Start LocalStack container
             logger.Information("Starting LocalStack container...");
             TestContext.Progress.WriteLine("Starting LocalStack container...");
-            
+
             _localStackContainer = new ContainerBuilder()
                 .WithImage("localstack/localstack:latest")
                 .WithPortBinding(4566, true)
@@ -59,10 +59,10 @@ public class Bootstrapper
                 .Build();
 
             await _localStackContainer.StartAsync();
-            
+
             var port = _localStackContainer.GetMappedPublicPort(4566);
             LocalStackServiceUrl = $"http://{_localStackContainer.Hostname}:{port}";
-            
+
             logger.Information($"LocalStack started at {LocalStackServiceUrl}");
             TestContext.Progress.WriteLine($"LocalStack started at {LocalStackServiceUrl}");
 
@@ -73,12 +73,12 @@ public class Bootstrapper
             // These won't be used because LocalStack is configured with anonymous credentials
             var originalAccessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
             var originalSecretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
-            
+
             try
             {
                 Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
                 Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
-                
+
                 Container.Verify();
             }
             finally
@@ -112,7 +112,7 @@ public class Bootstrapper
     {
         Container?.Dispose();
         LoggerFactory?.Dispose();
-        
+
         if (_localStackContainer != null)
         {
             await _localStackContainer.DisposeAsync();
@@ -135,16 +135,14 @@ public class Bootstrapper
 
         container.RegisterInstance<ILoggerFactory>(loggerFactory);
 
-        var awsConfig = new AwsConfig(null, null, "eu-west-1", LocalStackServiceUrl);
-
         container.AddJustSayingNoOpMessageMonitor();
 
         var builder = container.AddJustSayingReturnBuilder(
-            awsConfig,
             new MessagingConfig
             {
-                Region = awsConfig.RegionEndpoint,
+                Region = "eu-west-1",
             },
+            LocalStackServiceUrl,
             builder =>
             {
                 builder.Subscriptions(
