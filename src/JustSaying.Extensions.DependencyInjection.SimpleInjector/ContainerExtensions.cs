@@ -51,7 +51,9 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             container.RegisterInstance<IHandlerResolver>(resolver);
             container.RegisterInstance<IServiceResolver>(resolver);
 
-            container.RegisterInstance<IAwsClientFactory>(new DefaultAwsClientFactory());
+            // Register factory lazily to avoid resolving AWS credentials prematurely
+            // When using LocalStack (ServiceUrl is set), the builder will configure anonymous credentials
+            container.RegisterSingleton<IAwsClientFactory>(() => new DefaultAwsClientFactory());
             container.RegisterSingleton<IAwsClientFactoryProxy>(
                 () => new AwsClientFactoryProxy(container.GetInstance<IAwsClientFactory>));
 
