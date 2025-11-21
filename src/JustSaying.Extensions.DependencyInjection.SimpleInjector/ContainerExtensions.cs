@@ -8,6 +8,7 @@ using JustSaying.Messaging.MessageSerialization;
 using JustSaying.Messaging.Middleware.Logging;
 using JustSaying.Messaging.Middleware.PostProcessing;
 using JustSaying.Messaging.Monitoring;
+using Newtonsoft.Json;
 using SimpleInjector;
 
 namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
@@ -22,35 +23,30 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
 
         public static MessagingBusBuilder AddJustSayingReturnBuilder(
             this Container container,
-            AwsConfig awsConfig,
+            IMessagingConfig messagingConfig,
             Action<MessagingBusBuilder> configure)
         {
-            var messagingConfig = new MessagingConfig
-            {
-                Region = awsConfig.RegionEndpoint,
-            };
-
             return AddJustSayingReturnBuilder(
                 container,
-                awsConfig,
                 messagingConfig,
+                null,
                 configure);
         }
 
         public static MessagingBusBuilder AddJustSayingReturnBuilder(
             this Container container,
-            AwsConfig awsConfig,
             IMessagingConfig messagingConfig,
+            string serviceUrl,
             Action<MessagingBusBuilder> configure)
         {
-            container.RegisterInstance(awsConfig);
-
             var resolver = new ServiceProviderResolver(container);
             container.RegisterInstance(resolver);
             container.RegisterInstance<IHandlerResolver>(resolver);
             container.RegisterInstance<IServiceResolver>(resolver);
 
-            container.RegisterInstance<IAwsClientFactory>(new DefaultAwsClientFactory());
+            // Register factory lazily to avoid resolving AWS credentials prematurely
+            // When using LocalStack (ServiceUrl is set), the builder will configure anonymous credentials
+            container.RegisterSingleton<IAwsClientFactory>(() => new DefaultAwsClientFactory());
             container.RegisterSingleton<IAwsClientFactoryProxy>(
                 () => new AwsClientFactoryProxy(container.GetInstance<IAwsClientFactory>));
 
@@ -63,17 +59,13 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
             container.RegisterInstance<IMessageContextAccessor>(messageContextAccessor);
             container.RegisterInstance<IMessageContextReader>(messageContextAccessor);
 
-            var messageSerializationFactory = new NewtonsoftSerializationFactory();
-            container.RegisterInstance<IMessageSerializationFactory>(messageSerializationFactory);
             container.RegisterSingleton<IMessageSubjectProvider, GenericMessageSubjectProvider>();
             container.RegisterSingleton<IVerifyAmazonQueues, AmazonQueueCreator>();
 
-            container.RegisterInstance<IMessageSerializationRegister>(
-                new MessageSerializationRegister(
-                    messagingConfig.MessageSubjectProvider,
-                    messageSerializationFactory));
-
             container.RegisterSingleton<IMessageReceivePauseSignal, MessageReceivePauseSignal>();
+
+            container.RegisterSingleton(() => new JsonSerializerSettings());
+            container.RegisterSingleton<IMessageBodySerializationFactory, NewtonsoftSerializationFactory>();
 
             container.RegisterInstance(messagingConfig);
             container.RegisterInstance(messagingConfig.QueueNamingConvention);
@@ -81,21 +73,16 @@ namespace JustSaying.Extensions.DependencyInjection.SimpleInjector
 
             var builder = new MessagingBusBuilder()
                 .WithServiceResolver(resolver)
+                .Messaging(c => c.WithRegion(messagingConfig.Region))
                 .Client(
                     x =>
                     {
-                        if (!string.IsNullOrEmpty(awsConfig.ServiceUrl))
+                        if (!string.IsNullOrEmpty(serviceUrl))
                         {
                             // The AWS client SDK allows specifying a custom HTTP endpoint.
                             // For testing purposes it is useful to specify a value that
                             // points to a docker image such as `localstack/localstack`
-                            x.WithServiceUri(new Uri(awsConfig.ServiceUrl)).WithAnonymousCredentials();
-                        }
-                        else
-                        {
-                            // The real AWS environment will require some means of authentication
-                            x.WithBasicCredentials(awsConfig.AccessKey, awsConfig.SecretKey);
-                            //x.WithSessionCredentials("###", "###", "###");
+                            x.WithServiceUri(new Uri(serviceUrl)).WithAnonymousCredentials();
                         }
                     });
 

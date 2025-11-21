@@ -1,24 +1,19 @@
 # NOTE: Needs buildkit for proper targetting
 # export DOCKER_BUILDKIT=1
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
 # For running tests, target the build container and run dotnet test within this container
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 ARG VERSION
 WORKDIR /
 COPY . .
 WORKDIR /src
 COPY README.md ../README.md
 RUN dotnet build /p:Version=$VERSION -c Release -o /app
-
-# Our testrunner target
-FROM build AS testrunner
-WORKDIR /src
-ENTRYPOINT ["sh", "test_and_transform.sh"]
 
 # Our package target
 FROM build AS publish
